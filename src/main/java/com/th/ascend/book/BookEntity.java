@@ -8,9 +8,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.Data;
-import org.hibernate.annotations.ColumnDefault;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "book", indexes = {
@@ -23,12 +22,10 @@ public class BookEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     long id;
-    String title;
 
-    @Column(nullable = false)
+    String title;
     String author;
 
-    @ColumnDefault("CURRENT_TIMESTAMP")
-    @Column(name = "published_date", nullable = false)
-    private LocalDateTime publishedDate;
+    @Column(name = "published_date", columnDefinition = "DATE DEFAULT (CURRENT_DATE)")
+    private LocalDate publishedDate;
 }

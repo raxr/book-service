@@ -2,18 +2,24 @@ package com.th.ascend.book;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import org.apache.commons.lang3.StringUtils;
 
 public record RequestBook(
-        @NotBlank
+        @NotBlank(message = "Title is required")
         String title,
 
-        @NotBlank
+        @NotBlank(message = "Author is required")
         String author,
 
-        String publisher,
-
         @NotNull(message = "Published date is required")
-        @ValidYear(message = "Year must be between 1000-current (CE) or 1543-current+543 (BE)")
-        String publishedDate
+        @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}", message = "Date format must be yyyy-MM-dd")
+        String publishedDate,
+
+        @Pattern(regexp = "CE|BE", message = "Calendar must be CE or BE")
+        String calendar
 ) {
+    public RequestBook {
+        calendar = StringUtils.isNotBlank(calendar) ? calendar : "CE";
+    }
 }
