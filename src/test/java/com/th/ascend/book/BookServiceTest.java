@@ -18,6 +18,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -49,14 +50,16 @@ public class BookServiceTest {
 
         LocalDate base = LocalDate.now();
         List<BookEntity> tenDescending = new ArrayList<>();
-        for (int i = 0; i < defaultSize; i++) {
-            BookEntity be = new BookEntity();
-            be.setId(i + 1);
-            be.setTitle("Title " + (i + 1));
-            be.setAuthor(author);
-            be.setPublishedDate(base.minusDays(i));
-            tenDescending.add(be);
-        }
+        IntStream.range(0, defaultSize)
+                .mapToObj(bookIndex -> {
+                    var be = new BookEntity();
+                    be.setId(bookIndex + 1);
+                    be.setTitle("Title " + (bookIndex + 1));
+                    be.setAuthor(author);
+                    be.setPublishedDate(base.minusDays(bookIndex));
+                    return be;
+            })
+            .forEach(tenDescending::add);
 
         Page<BookEntity> page = new PageImpl<>(tenDescending, PageRequest.of(defaultPage, defaultSize, sort), 12);
         when(bookRepository.findByAuthor(anyString(), any(Pageable.class))).thenReturn(page);
