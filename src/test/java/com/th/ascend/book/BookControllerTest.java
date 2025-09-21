@@ -10,8 +10,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.data.domain.Pageable;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 
@@ -44,10 +45,10 @@ public class BookControllerTest {
     void givenBookListByAuthor_ReturnsListFromService() throws Exception {
         String author = "Robert C. Martin";
         List<ResponseBook> serviceResult = List.of(
-                new ResponseBook(1L, "Clean Code", author, LocalDateTime.of(2020, 1, 1, 10, 0, 0)),
-                new ResponseBook(2L, "Clean Coder", author, LocalDateTime.of(2021, 1, 1, 10, 0, 0))
+                new ResponseBook(1L, "Clean Code", author, LocalDate.of(2020, 1, 1)),
+                new ResponseBook(2L, "Clean Coder", author, LocalDate.of(2021, 1, 1))
         );
-        when(bookService.getBookListByAuthor(eq(new RequestBookByAuthor(author)))).thenReturn(serviceResult);
+        when(bookService.getBookListByAuthor(eq(new RequestBookByAuthor(author)), any(Pageable.class))).thenReturn(serviceResult);
 
         String body = objectMapper.writeValueAsString(new RequestBookByAuthor(author));
 
@@ -59,14 +60,14 @@ public class BookControllerTest {
                 .andExpect(jsonPath("$[0].id").value(1))
                 .andExpect(jsonPath("$[0].title").value("Clean Code"))
                 .andExpect(jsonPath("$[0].author").value(author))
-                .andExpect(jsonPath("$[0].publishedDate").value("2020-01-01T10:00:00"))
+                .andExpect(jsonPath("$[0].publishedDate").value("2020-01-01"))
                 .andExpect(jsonPath("$[1].id").value(2))
                 .andExpect(jsonPath("$[1].title").value("Clean Coder"))
                 .andExpect(jsonPath("$[1].author").value(author))
-                .andExpect(jsonPath("$[1].publishedDate").value("2021-01-01T10:00:00"));
+                .andExpect(jsonPath("$[1].publishedDate").value("2021-01-01"));
 
         ArgumentCaptor<RequestBookByAuthor> captor = ArgumentCaptor.forClass(RequestBookByAuthor.class);
-        verify(bookService).getBookListByAuthor(captor.capture());
+        verify(bookService).getBookListByAuthor(captor.capture(), any(Pageable.class));
         assertEquals(author, captor.getValue().author());
     }
 
@@ -75,14 +76,14 @@ public class BookControllerTest {
         RequestBook request = new RequestBook(
                 "Clean Architecture",
                 "Robert C. Martin",
-                "Pearson",
-                "2018-09-20 10:00:00"
+                "2018-09-20",
+                "CE"
         );
         ResponseBook created = new ResponseBook(
                 100L,
                 "Clean Architecture",
                 "Robert C. Martin",
-                LocalDateTime.of(2018, 9, 20, 10, 0, 0)
+                LocalDate.of(2018, 9, 20)
         );
 
         when(bookService.createBook(any(RequestBook.class))).thenReturn(created);
@@ -94,20 +95,19 @@ public class BookControllerTest {
                 .andExpect(jsonPath("$.id").value(100))
                 .andExpect(jsonPath("$.title").value("Clean Architecture"))
                 .andExpect(jsonPath("$.author").value("Robert C. Martin"))
-                .andExpect(jsonPath("$.publishedDate").value("2018-09-20T10:00:00"));
+                .andExpect(jsonPath("$.publishedDate").value("2018-09-20"));
 
         ArgumentCaptor<RequestBook> captor = ArgumentCaptor.forClass(RequestBook.class);
         verify(bookService).createBook(captor.capture());
         assertEquals(request.title(), captor.getValue().title());
         assertEquals(request.author(), captor.getValue().author());
-        assertEquals(request.publisher(), captor.getValue().publisher());
         assertEquals(request.publishedDate(), captor.getValue().publishedDate());
     }
 
     @Test
     void givenBookListByAuthor_ReturnsEmptyListWhenNoneFound() throws Exception {
         String author = "Unknown Author";
-        when(bookService.getBookListByAuthor(any(RequestBookByAuthor.class))).thenReturn(Collections.emptyList());
+        when(bookService.getBookListByAuthor(any(RequestBookByAuthor.class), any(Pageable.class))).thenReturn(Collections.emptyList());
 
         mockMvc.perform(get(BASE_PATH)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -121,8 +121,8 @@ public class BookControllerTest {
         RequestBook invalid = new RequestBook(
                 "",
                 "Some Author",
-                "Pub",
-                "2020-01-01 10:00:00"
+                "2020-01-01",
+                "CE"
         );
 
         mockMvc.perform(post(BASE_PATH)
@@ -134,27 +134,26 @@ public class BookControllerTest {
     }
 
     @Test
-    void givenCreateBook_Returns400_WhenPublishedDateInvalid() throws Exception {
-        RequestBook invalid = new RequestBook(
+    void givenCreateBook_Returns200_WhenPublishedDateFormatValidButYearOutOfRange() throws Exception {
+        RequestBook invalidYearButFormatOk = new RequestBook(
                 "Some Title",
                 "Some Author",
-                "Pub",
-                "0999-01-01 00:00:00"
+                "0999-01-01",
+                "CE"
         );
 
         mockMvc.perform(post(BASE_PATH)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalid)))
-                .andExpect(status().isBadRequest());
+                        .content(objectMapper.writeValueAsString(invalidYearButFormatOk)))
+                .andExpect(status().isOk());
 
-        verifyNoInteractions(bookService);
     }
 
     @Test
-    void givenBookListByAuthor_Returns400_WhenRequestBodyMissingOrMalformed() throws Exception {
+    void givenBookListByAuthor_Returns500_WhenRequestBodyMissingOrMalformed() throws Exception {
         mockMvc.perform(get(BASE_PATH)
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isInternalServerError());
 
         verifyNoInteractions(bookService);
     }

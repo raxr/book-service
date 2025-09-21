@@ -2,6 +2,7 @@ package com.th.ascend.book;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,8 +19,8 @@ public class BookController {
     private final BookService bookService;
 
     @GetMapping
-    public List<ResponseBook> getBookListByAuthor(@RequestBody RequestBookByAuthor requestBookByAuthor) {
-        return bookService.getBookListByAuthor(requestBookByAuthor);
+    public List<ResponseBook> getBookListByAuthor(@RequestBody RequestBookByAuthor requestBookByAuthor, Pageable pageable) {
+        return bookService.getBookListByAuthor(requestBookByAuthor, pageable);
     }
 
     @PostMapping
