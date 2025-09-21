@@ -58,8 +58,8 @@ public class BookServiceTest {
                     be.setAuthor(author);
                     be.setPublishedDate(base.minusDays(bookIndex));
                     return be;
-            })
-            .forEach(tenDescending::add);
+                })
+                .forEach(tenDescending::add);
 
         Page<BookEntity> page = new PageImpl<>(tenDescending, PageRequest.of(defaultPage, defaultSize, sort), 12);
         when(bookRepository.findByAuthor(anyString(), any(Pageable.class))).thenReturn(page);
@@ -77,9 +77,9 @@ public class BookServiceTest {
 
         assertNotNull(result);
         assertEquals(defaultSize, result.size(), "Result should be limited to default page size (10)");
-        for (int i = 0; i < result.size() - 1; i++) {
-            LocalDate current = result.get(i).publishedDate();
-            LocalDate next = result.get(i + 1).publishedDate();
+        for (int currentIndex = 0; currentIndex < result.size() - 1; currentIndex++) {
+            LocalDate current = result.get(currentIndex).publishedDate();
+            LocalDate next = result.get(currentIndex + 1).publishedDate();
             assertTrue(current.isAfter(next), "List should be sorted by publishedDate descending");
         }
     }
